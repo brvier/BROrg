@@ -13,5 +13,5 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Build with buildozer
-      - run: buildozer android debug 
+        name: Build with buildozer
+        run: buildozer android debug 
