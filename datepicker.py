@@ -22,23 +22,25 @@ KV = """
 <ActionButton@ButtonBehavior+Label>:
     canvas:
         Color:
-            rgba: (1, 1, 1, 0.1) if self.text != "" else (0,0,0,0) 
+            rgba: app.theme.actionbuttonbg if self.text != "" else (0,0,0,0) 
         Rectangle:
             pos: self.pos[0] + dp(1), self.pos[1] + dp(1)
             size: self.size[0] - dp(2), self.size[1] - dp(2) 
     size_hint: 1, 1 
+    color: app.theme.actionbuttoncolor
+ 
 <Day@ButtonBehavior+Label>:
     canvas:
         Color:
-            rgba: (1, 1, 1, 0.1) if self.text != "" else (0,0,0,0) 
+            rgba: app.theme.daybuttonbg if self.text != "" else (0,0,0,0) 
         Rectangle:
             pos: self.pos[0] + dp(1), self.pos[1] + dp(1)
             size: self.size[0] - dp(2), self.size[1] - dp(2) 
         
     selected: False if self.text=='' else (root.parent.parent.day == int(self.text))
     datepicker: self.parent.datepicker
-    color: [1,1,1,1] if not self.selected else [1,0,0,1]
-    background_color: [1,1,1,1] if self.text != "" else [0,0,0,0]
+    color: app.theme.daybuttoncolor if not self.selected else app.theme.dayselectedbuttoncolor
+    background_color: app.theme.daybuttonbg if self.text != "" else [0,0,0,0]
     disabled: True if self.text == "" else False
     on_release:
         root.datepicker.day = int(self.text)
@@ -87,7 +89,7 @@ KV = """
 
     Label:
         text: "%s %s" % (root.datepicker.months[root.datepicker.month-1], str(root.datepicker.year))
-        color: 1,0,0,1
+        color: app.theme.navbarcolor
   
     ActionButton:
         text: ">"
@@ -109,7 +111,7 @@ KV = """
 
     Label
         text: "%02d:%02d" % (root.datepicker.hour,root.datepicker.minute)
-        color: 1,0,0,1
+        color: app.theme.navbarcolor
  
     ActionButton:
         text: ">"
@@ -158,13 +160,13 @@ class DatetimePicker(BoxLayout):
     minute = NumericProperty(0)
 
 
-Builder.load_string(KV)
-
 if __name__ == "__main__":
     import datetime
 
     class MyApp(App):
         def build(self):
+            Builder.load_string(KV)
+
             dp = DatetimePicker()
             now = datetime.datetime.now()
             dp.day = now.day

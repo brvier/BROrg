@@ -5,7 +5,7 @@ BrOrg
 Organize your life in Markdown Files
 
 """
-__version__ = "0.1.0"
+__version__ = "0.3.0"
 
 from functools import partial
 from os.path import join, exists, dirname, basename, relpath, splitext
@@ -18,7 +18,8 @@ import os
 import re
 import humanize
 import datetime
-
+import themes
+import weakref
 
 from kivy.app import App
 from kivy.uix.screenmanager import Screen, SlideTransition
@@ -27,6 +28,7 @@ from kivy.properties import (
     StringProperty,
     NumericProperty,
     BooleanProperty,
+    DictProperty,
 )
 from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import Clock
@@ -46,7 +48,6 @@ from plyer.utils import platform
 from kivy.lang import Builder
 from kivy.core.window import Window
 from kivy.core.text import LabelBase
-from kivy.uix.behaviors.focus import FocusBehavior
 
 from pygments.lexers.markup import MarkdownLexer
 from dateutil.parser import parse
@@ -177,47 +178,6 @@ class SelectableRecycleBoxLayout(
     """Adds selection and focus behaviour to the view."""
 
 
-"""class MutableTextInput(FloatLayout):
-
-    text = StringProperty()
-    multiline = BooleanProperty(True)
-    editable = BooleanProperty(False)
-
-    def __init__(self, **kwargs):
-        super(MutableTextInput, self).__init__(**kwargs)
-        Clock.schedule_once(self.prepare, 0)
-
-    def prepare(self, *args):
-        self.w_textinput = self.ids.w_textinput.__self__
-        self.w_label = self.ids.w_label.__self__
-        self.view()
-
-    def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos) and touch.is_double_tap:
-            self.edit()
-        return super(MutableTextInput, self).on_touch_down(touch)
-
-    def edit(self):
-        if not self.editable:
-            return
-
-        self.clear_widgets()
-        self.add_widget(self.w_textinput)
-        self.w_textinput.focus = True
-
-    def view(self):
-        self.clear_widgets()
-        if not self.text:
-            self.w_label.text = "Double tap/click to edit"
-        self.add_widget(self.w_label)
-
-    def check_focus_and_view(self, textinput):
-        if not textinput.focus:
-            self.text = textinput.text
-            self.view()
-"""
-
-
 class MDInput(CodeInput):
 
     re_indent_todo = re.compile(r"^\s*(-\s\[\s\]\s)")
@@ -225,7 +185,7 @@ class MDInput(CodeInput):
     re_indent_list = re.compile(r"^\s*(-\s)")
 
     def __init__(self, **kwarg):
-        CodeInput.__init__(self, lexer=MarkdownLexer(), style_name="monokai")
+        CodeInput.__init__(self, lexer=MarkdownLexer(), style_name="default")
         # User can change keyboard size during input, so we should regularly update the keyboard height
         self.trigger_keyboard_height = Clock.create_trigger(
             self.update_keyboard_height, 1, interval=True
@@ -396,7 +356,7 @@ class NotesScreen(Screen):
 
 
 class SettingsScreen(Screen):
-    theme = StringProperty("dark")
+    pass
 
 
 class DatetimePickerScreen(Screen):
@@ -424,11 +384,24 @@ class BrOrg(App):
 
     quick_todo_file = StringProperty()
     quick_todo_header = StringProperty()
+    quick_note_file = StringProperty()
+    quick_note_header = StringProperty()
     quick_event_file = StringProperty()
     quick_event_header = StringProperty()
     quick_journal_file = StringProperty()
     quick_journal_header = StringProperty()
     quick_journal_item = StringProperty()
+
+    theme = DictProperty(themes.get_dark_theme())
+
+    def set_theme(self, thme):
+        if thme == "gruvbox":
+            self.theme = themes.get_gruvbox_theme()
+        elif thme == "dark":
+            self.theme = themes.get_dark_theme()
+        else:
+            self.theme = themes.get_light_theme()
+        self.set_pref("theme", self.theme["name"])
 
     def create_default_prefs(self):
         settings = {
@@ -438,11 +411,14 @@ class BrOrg(App):
             "webdav_path": "",
             "quick_todo_file": "Org.md",
             "quick_todo_header": "## Todos",
+            "quick_note_file": "Org.md",
+            "quick_note_header": "## Quicknotes",
             "quick_event_file": "Org.md",
             "quick_event_header": "## Events",
             "quick_journal_file": "Journal.md",
-            "quick_journal_header": "## {%Y-%m-%d %a}",
-            "quick_journal_item": "- {%Y-%m-%d %a} : {}",
+            "quick_journal_header": "## {:%Y-%m-%d %a}",
+            "quick_journal_item": "- {:%Y-%m-%d %a} : {}",
+            "theme": "dark",
         }
         with open(self.settings_fn, "w") as fh:
             json.dump(settings, fh)
@@ -495,26 +471,41 @@ class BrOrg(App):
 
             PythonActivity = autoclass("org.kivy.android.PythonActivity")
             mactivity = PythonActivity.mActivity
-
             try:
                 self.on_new_intent(mactivity.getIntent())
+                print("DEBUG: %s" % PythonActivity.getIntent())
+                self.on_new_intent(PythonActivity.getIntent())
                 activity.bind(on_new_intent=self.on_new_intent)
-            except Exception:
-                pass
+            except Exception as err:
+                print("DEBUG 3: %s" % err)
 
     def build(self):
         Window.bind(on_keyboard=self.key_input)
-
         # load sync settings
         self.webdav_host = self.get_pref("webdav_host")
         self.webdav_login = self.get_pref("webdav_login")
         self.webdav_passwd = self.get_pref("webdav_passwd")
         self.webdav_path = self.get_pref("webdav_path")
+
+        self.quick_todo_file = self.get_pref("quick_todo_file", "Org.md")
+        self.quick_todo_header = self.get_pref("quick_todo_header", "## Todos")
+        self.quick_note_file = self.get_pref("quick_note_file", "Org.md")
+        self.quick_note_header = self.get_pref("quick_note_header", "## Quicknotes")
+        self.quick_event_file = self.get_pref("quick_event_file", "Org.md")
+        self.quick_event_header = self.get_pref("quick_event_header", "## Events")
+        self.quick_journal_file = self.get_pref("quick_journal_file", "Journal.md")
+        self.quick_journal_header = self.get_pref(
+            "quick_journal_header", "## {%Y-%m-%d %a}"
+        )
+        self.quick_journal_item = self.get_pref(
+            "quick_journal_item", "- {%Y-%m-%d %a} : {}"
+        )
+        self.set_theme(self.get_pref("theme"))
         self.sync_th = None
 
         self.noteView = None
         self.transition = SlideTransition(duration=0.05)
-        self.mainWidget = Builder.load_file("note.kv")
+        self.mainWidget = Builder.load_file("main.kv")
 
         Clock.schedule_once(self.__init__later__, 0)
         return self.mainWidget
@@ -543,7 +534,11 @@ class BrOrg(App):
                 if not os.path.isfile(os.path.join(self.notes_fn, path)):
                     continue
                 with open(os.path.join(self.notes_fn, path), "r") as fh:
-                    content = fh.read()
+                    try:
+                        content = fh.read()
+                    except UnicodeDecodeError:
+                        print("Not a text file {}".format(path))
+                        continue
                     idx = 0
                     for line in content.split("\n"):
                         idx += len(line) + 1
@@ -703,9 +698,21 @@ class BrOrg(App):
 
     def __init__later__(self, dt):
         self.load_today()
-
         self.sync()
         self.load_today()
+        Clock.schedule_once(self.__init__lazy__, 0)
+
+    def __init__lazy__(self, dt):
+        Builder.load_file("lazy.kv")
+        tV = TodoView(name="todoView")
+        sS = SettingsScreen(name="settings")
+        dPS = DatetimePickerScreen(name="datetimepicker")
+        self.mainWidget.ids.sm.add_widget(tV)
+        self.mainWidget.ids.sm.add_widget(sS)
+        self.mainWidget.ids.sm.add_widget(dPS)
+        self.mainWidget.ids["todoView"] = weakref.ref(tV)
+        self.mainWidget.ids["settingsView"] = weakref.ref(sS)
+        self.mainWidget.ids["datetimePickerView"] = weakref.ref(dPS)
 
     def sort_notes(
         self,
@@ -885,10 +892,18 @@ class BrOrg(App):
                 self.quick_journal_header.format(datetime.datetime.now()),
                 c,
             )
+        else:
+            self.insert_org(
+                self.quick_note_file,
+                self.quick_note_header,
+                "{}".format(self.root.ids.todoView.ids.w_time.text),
+            )
         self.root.ids.todoView.ids.w_text.text = ""
+        self.root.ids.todoView.ids.w_text.focus = False
         self.go_today()
 
-    def add_todo(self):
+    def add_todo(self, *kwargs):
+        print((self.root.ids))
         self.root.ids.sm.transition.direction = "left"
         self.root.ids.sm.current = "todoView"
         self.display_add = False
@@ -990,6 +1005,21 @@ class BrOrg(App):
         self.root.ids.todayScreen.ids.sync_progressbar.value = (
             self.root.ids.todayScreen.ids.sync_progressbar.value + 10
         ) % 100
+
+    def validate_sync_settings(self, *kwargs):
+        s = WebDavSync(
+            host=self.webdav_host,
+            login=self.webdav_login,
+            passwd=self.webdav_passwd,
+            root=self.webdav_path,
+            local_path=self.notes_fn,
+        )
+        try:
+            s._get_remote_etag("/")
+            self.root.ids.settingsView.ids.sync_status.text = "OK"
+        except Exception as err:
+            self.root.ids.settingsView.ids.sync_status.text = str(err)
+        self.root.ids.settingsView.ids.sync_test.selected = False
 
     def _sync(self):
         # self.syncing_inter = Clock.schedule_interval(self._rotate_sync_button, 0.1)
@@ -1186,7 +1216,6 @@ class BrOrg(App):
             dt = datetime.datetime.now()
             print("exception", dt)
 
-        # Factory.DatetimePickerPopup().open(dt, self.insertDatetime)
         dtp = self.root.ids.datetimePickerView.ids.dtp
         dtp.day, dtp.month, dtp.year, dtp.hour, dtp.minute = (
             dt.day,
@@ -1227,15 +1256,16 @@ class BrOrg(App):
         self.sync()
 
     def on_new_intent(self, intent):
-        intent_data = intent.getData()
+        text = None
         try:
-            file_uri = intent_data.toString()  # isn't Java awesome?
-        except AttributeError:
-            file_uri = None
+            text = intent.getStringExtra(intent.EXTRA_TEXT)
+            print(intent.getExtras())
+        except Exception as err:
+            print("Can t read INTENT : %" % err)
 
-        print("on_new_intent:", file_uri, "intent_data:", intent_data)
-
-        print("getDataString", intent.getDataString())
+        if text:
+            self.root.ids.todoView.ids.w_text.text = text
+            Clock.schedule_once(self.add_todo, 1)
 
 
 if __name__ == "__main__":

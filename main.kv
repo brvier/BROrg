@@ -1,0 +1,166 @@
+<CircularButton>:
+    text: ''
+    font_name: 'Roboto'
+    font_size: '18sp'
+    color: (.1,.1,.1,1)
+    angle:0
+    canvas.before:
+        PushMatrix
+        Color:
+            rgba: root.color
+        Ellipse:
+            pos: self.pos
+            size: self.size
+        Rotate:
+            angle: root.angle
+            origin: self.center
+
+    canvas.after:
+        PopMatrix
+    padding: (dp(8), 0)
+    Label:
+        center: self.parent.center
+        color: app.theme.circularbuttoncolor
+        text: self.parent.text
+        font_name: self.parent.font_name
+        font_size: self.parent.font_size
+
+
+<Screen>:
+    canvas:
+        Color:
+            rgba: app.theme.screenbg
+        Rectangle:
+            size: self.size
+
+
+<TodayRecycleView>:
+    viewclass: 'TodayListItem'
+    SelectableRecycleBoxLayout:
+        default_size: None, dp(64) 
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'vertical'
+        scroll_y: 0        
+
+<TodayListItem>:
+    height: dp(64)
+    #on_selected: app.inverse_todo(root.index, root.selected)
+    on_selected: app.edit_today(root.index, root.selected)
+    canvas:
+        Color:
+            rgba: app.theme.textlistitemselectedbgcolor if root.itemtype==0 else app.theme.textlistitembgcolor
+        Rectangle:
+            pos: self.pos
+            size: self.size 
+    BoxLayout:
+        #height:dp(64)
+        padding: dp(10) if root.itemtype>0 else dp(0), dp(0)
+        size_hint: 1, 1
+        orientation: 'horizontal'
+        #Image:
+        #    source: 'datas/unchecked.png' if root.itemtype==1 else ''
+        #    size_hint: None, None
+        #    size: dp(16) if root.itemtype>0 else dp(0), dp(16) if root.itemtype>0 else dp(0)
+        #    pos_hint: {'center_y': 0.5}
+        Label:
+            font_name:"awesome"
+            font_size:"16sp"
+            size_hint: None, None
+            size: dp(24), dp(24)
+            text: "" if root.itemtype == 0 else ("\uf0c8" if root.itemtype == 1 else ("\uf017" if root.itemtype == 2 else "\uf039"))
+            pos_hint: {'center_y': 0.5}
+            color: app.theme.textlistitemselectediconcolor if root.selected else app.theme.textlistitemiconcolor
+             
+        BoxLayout:
+            padding: dp(10) if root.itemtype != 0 else dp(0), dp(10), dp(10), dp(18) 
+            orientation: 'vertical'
+            size_hint: 1, 1
+            Label:
+                text: root.text
+                halign: 'left'
+                size_hint_y: None 
+                text_size: self.size
+                color: app.theme.textlistitemselectedcolor if root.selected else app.theme.textlistitemcolor
+                font_size: sp(24) if root.itemtype == 0 else sp(14)
+            Label:
+                text: root.due if root.due else ''
+                color: app.theme.textlistitemselectedsubcolor if root.selected else app.theme.textlistitemsubcolor
+                font_size: 0 if root.itemtype==0 else sp(12)
+                halign: 'left'
+                size_hint_y: None 
+                text_size: self.size
+                height: 0 if root.itemtype==0 else dp(14)
+ 
+<AwesomeCircularButton@CircularButton>:
+    font_name:"awesome"
+    font_size:"16sp"
+    size_hint: None, None
+    size: dp(48), dp(48)
+
+<TodayScreen>:
+       
+    TodayRecycleView:
+        id: todaylistview
+        data:app.today
+    FloatLayout:
+        Label:
+            value: 10
+            canvas.before:
+                Color:
+                    rgba: app.theme.syncingstatusbg if app.syncing else (0,0,0,0)
+                Rectangle:
+                    pos: self.pos 
+                    size: self.size 
+            size_hint: 1, None
+            pos: 0, 0
+            height: dp(32)
+            opacity: 1 if app.syncing else 0
+            text: "Syncing"
+            color: app.theme.syncingstatus
+            id: sync_indication
+        AwesomeCircularButton:
+            id: settings_button
+            color: 0, 0, 0, 0
+            pos: self.parent.width - dp(64), self.parent.height - dp(64)
+            angle: 0
+            size_hint: None, None
+            text: '\uf085' #'\uf085'
+            height: '64dp'
+            width: '64dp'
+            font_size: "24sp"
+            on_release: app.go_settings()
+        AwesomeCircularButton:
+            color: app.theme.circularbuttonbg
+            pos: self.parent.width - dp(80), dp(112)# + app.keyboard_height
+            size_hint: None, None
+            text: '\uf067'
+            height: '64dp'
+            width: '64dp'
+            font_size: "24sp"
+            on_release: app.add_note()
+        AwesomeCircularButton:
+            color: app.theme.circularbuttonbg
+            pos: self.parent.width - dp(80), dp(16) #+ app.keyboard_height
+            size_hint: None, None
+            font_size: "24sp"
+            text: '\uf271'
+            height: '64dp'
+            width: '64dp'
+            on_release: app.add_todo()
+
+AnchorLayout:          
+    anchor_y:"top"
+    size_hint:1,1
+    BoxLayout:
+        orientation: 'vertical'
+        size_hint: 1, None
+        height: root.height - app.keyboard_height
+
+        ScreenManager:
+            id: sm
+
+            TodayScreen:
+                name:'today'
+                id: todayScreen

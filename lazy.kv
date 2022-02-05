@@ -1,74 +1,14 @@
-#:import Factory kivy.factory.Factory
 #:import ScrollView kivy.uix.scrollview.ScrollView
 #:import datetime datetime
-#:import Factory kivy.factory.Factory
 #:import Clipboard kivy.core.clipboard.Clipboard
 #:import DatetimePicker datepicker.DatetimePicker
-
-<CircularButton>:
-    text: ''
-    font_name: 'Roboto'
-    font_size: '18sp'
-    color: .8, .2, .2, 1
-    angle:0
-    canvas.before:
-        PushMatrix
-        Color:
-            rgba: root.color
-        Ellipse:
-            pos: self.pos
-            size: self.size
-        Rotate:
-            angle: root.angle
-            origin: self.center
-
-    canvas.after:
-        PopMatrix
-    padding: (dp(8), 0)
-    Label:
-        center: self.parent.center
-        color: 1,1,1,1
-        text: self.parent.text
-        font_name: self.parent.font_name
-        font_size: self.parent.font_size
-
-
-<Screen>:
-    canvas:
-        Color:
-            rgb: .1, .1, .1
-        Rectangle:
-            size: self.size
-
-
-<TodayRecycleView>:
-    viewclass: 'TodayListItem'
-    SelectableRecycleBoxLayout:
-        default_size: None, dp(64) 
-        default_size_hint: 1, None
-        size_hint_y: None
-        height: self.minimum_height
-        orientation: 'vertical'
-        scroll_y: 0        
-
-<TextRecycleView>:
-    viewclass: 'TextListItem'
-    selected: []
-    SelectableRecycleBoxLayout:
-        default_size: None, dp(64) 
-        default_size_hint: 1, None
-        size_hint_y: None
-        height: self.minimum_height
-        orientation: 'vertical'
-        scroll_y: 0        
-        selected_nodes: root.selected
 
 <NoteView>:
     id: noteView
     on_content: app.save_note(self.filepath, self.content)
     canvas:
         Color:
-            rgb: (.0, .0, .0) 
+            rgba: app.theme.screenbg
         Rectangle:
             pos: self.pos
             size: self.size 
@@ -84,8 +24,9 @@
             font_size: sp(14)
             on_text: root.content = self.text
             multiline: True
-            background_color: (.1, .1, .1, 1)
-            foreground_color: (1, 1, 1, 1)
+            background_color: app.theme.notebg
+            foreground_color: app.theme.notetextcolor
+            style: app.theme.pygmentstyle
             unfocus_on_touch: False
             auto_indent: True
             replace_crlf: True
@@ -100,7 +41,7 @@
             BoxLayout:
                 canvas:
                     Color:
-                        rgba: (.8, .8, .8, .1) 
+                        rgba: app.theme.toolbarbg
                     Rectangle:
                         pos: self.pos # self.pos[0]-dp(10), self.pos[1]
                         size: self.size  #self.size[0]+dp(20), self.size[1]
@@ -176,15 +117,16 @@
        
         MyTextInput:
             id: w_text
-            background_color: (.2, .2, .2, 1)
-            foreground_color: (1, 1, 1, 1)
+            foreground_color: app.theme.textinputcolor
+            background_color: app.theme.textinputbg
+            #foreground_color: (1, 1, 1, 1)
             size_hint: 1, None
             unfocus_on_touch: False
             font_size: sp(14)
             height: max( (len(self._lines)+1) * self.line_height +dp(48), dp(64))
             canvas:
                 Color:
-                    rgba: (.8, .8, .8, .5) 
+                    rgba: app.theme.textinputbg 
                 Rectangle:
                     pos: self.pos[0]-dp(10), self.pos[1]
                     size: self.size[0]+dp(20), self.size[1]
@@ -260,80 +202,14 @@
 
     FloatLayout:
         AwesomeCircularButton:
-            color: .9,.2, .2, 1
+            color: app.theme.circularbuttonbg
             size_hint: None, None
-            #pos_hint:{"bottom":1,"right":1}
             pos: root.width -dp(80), dp(16)
-            #font_size: "24sp"
             text: '\uf271'
             height: '64dp'
             width: '64dp'
             on_release: app.add_item()
 
-<TextListItem>:
-    height: dp(64)
-    #on_selected: app.edit_today(root.index, root.selected)
-    canvas:
-        Color:
-            rgb: (.0, .0, .4, 0.9) if root.selected else (.0,.0,.0, 1)
-        Rectangle:
-            pos: self.pos
-            size: self.size 
-    Label:
-        font_name:"awesome"
-        font_size:"16sp"
-        size_hint: 1, None
-        size: dp(24), dp(24)
-        pos_hint: {'center_y': 0.5}
-        text: root.text 
-   
-<TodayListItem>:
-    height: dp(64)
-    #on_selected: app.inverse_todo(root.index, root.selected)
-    on_selected: app.edit_today(root.index, root.selected)
-    canvas:
-        Color:
-            rgb: (.0, .0, .0) if root.itemtype>0 else (.1,.1,.1)
-        Rectangle:
-            pos: self.pos
-            size: self.size 
-    BoxLayout:
-        #height:dp(64)
-        padding: dp(10) if root.itemtype>0 else dp(0), dp(0)
-        size_hint: 1, 1
-        orientation: 'horizontal'
-        #Image:
-        #    source: 'datas/unchecked.png' if root.itemtype==1 else ''
-        #    size_hint: None, None
-        #    size: dp(16) if root.itemtype>0 else dp(0), dp(16) if root.itemtype>0 else dp(0)
-        #    pos_hint: {'center_y': 0.5}
-        Label:
-            font_name:"awesome"
-            font_size:"16sp"
-            size_hint: None, None
-            size: dp(24), dp(24)
-            text: "" if root.itemtype == 0 else ("\uf0c8" if root.itemtype == 1 else ("\uf017" if root.itemtype == 2 else "\uf039"))
-            pos_hint: {'center_y': 0.5}
-             
-        BoxLayout:
-            padding: dp(10) if root.itemtype != 0 else dp(0), dp(10), dp(10), dp(18) 
-            orientation: 'vertical'
-            size_hint: 1, 1
-            Label:
-                text: root.text
-                halign: 'left'
-                size_hint_y: None 
-                text_size: self.size
-                font_size: sp(24) if root.itemtype == 0 else sp(14)
-            Label:
-                text: root.due if root.due else ''
-                color: 0.5, 0.5, 0.5, 1
-                font_size: 0 if root.itemtype==0 else sp(12)
-                halign: 'left'
-                size_hint_y: None 
-                text_size: self.size
-                height: 0 if root.itemtype==0 else dp(14)
-  
 <SettingsScreen>:
     ScrollView:
         size_hint: 1, 1
@@ -345,15 +221,40 @@
             padding: dp(10), dp(10), dp(10), dp(10)
             height: max(setting_scrlv.height, self.minimum_height)
             Label:
+                text: 'Theme'
+                color: app.theme.labeltitle
+                font_size: sp(16)
+                text_size: self.size
+                height: dp(18)
+                size_hint: 1, None
+            BoxLayout:
+                size_hint: 1,None
+                height: dp(64)
+                SelectableButton:
+                    id: w_todo
+                    text: "Light"
+                    group: "theme"
+                    on_release: app.set_theme("light")
+                SelectableButton:
+                    id: w_journal
+                    group: "theme"
+                    text: "Dark"
+                    on_release: app.set_theme("dark")
+                SelectableButton:
+                    id: w_event
+                    group: "theme"
+                    text: "Gruvbox"
+                    on_release: app.set_theme("gruvbox")
+            Label:
                 text: 'Quick Add'
-                color: .7, .7, .7, 1
+                color: app.theme.labeltitle
                 font_size: sp(16)
                 text_size: self.size
                 height: dp(18)
                 size_hint: 1, None
             Label:
                 text: 'Quick Todo File'
-                color: .7, .7, .7, 1
+                color: app.theme.label
                 font_size: sp(11)
                 text_size: self.size
                 height: dp(18)
@@ -361,15 +262,15 @@
             TextInput:
                 id: quick_todo_file
                 text: app.quick_todo_file
-                background_color: (.2, .2, .2, 1)
-                foreground_color: (1, 1, 1, 1)
+                background_color: app.theme.textinputbg
+                foreground_color: app.theme.textinputcolor
                 hint_text: 'Org.md'
                 size_hint: 1, None
                 height: sp(32)
                 on_text:app.set_pref("quick_todo_file", self.text)
             Label:
                 text: 'Quick Todo Header'
-                color: .7, .7, .7, 1
+                color: app.theme.label
                 font_size: sp(11)
                 text_size: self.size
                 height: dp(18)
@@ -377,15 +278,47 @@
             TextInput:
                 id: quick_todo_header
                 text: app.quick_todo_header
-                background_color: (.2, .2, .2, 1)
-                foreground_color: (1, 1, 1, 1)
+                background_color: app.theme.textinputbg
+                foreground_color: app.theme.textinputcolor 
                 hint_text: '## Todos'
                 size_hint: 1, None
                 height: sp(32)
                 on_text:app.set_pref("quick_todo_header", self.text)
             Label:
+                text: 'Quick Note File'
+                color: app.theme.label
+                font_size: sp(11)
+                text_size: self.size
+                height: dp(18)
+                size_hint: 1, None
+            TextInput:
+                id: quick_note_file
+                text: app.quick_note_file
+                background_color: app.theme.textinputbg
+                foreground_color: app.theme.textinputcolor
+                hint_text: 'Org.md'
+                size_hint: 1, None
+                height: sp(32)
+                on_text:app.set_pref("quick_note_file", self.text)
+            Label:
+                text: 'Quick Note Header'
+                color: app.theme.label
+                font_size: sp(11)
+                text_size: self.size
+                height: dp(18)
+                size_hint: 1, None
+            TextInput:
+                id: quick_note_header
+                text: app.quick_note_header
+                background_color: app.theme.textinputbg
+                foreground_color: app.theme.textinputcolor 
+                hint_text: '## Quicknotes'
+                size_hint: 1, None
+                height: sp(32)
+                on_text:app.set_pref("quick_note_header", self.text)
+            Label:
                 text: 'Quick Event Header'
-                color: .7, .7, .7, 1
+                color: app.theme.label
                 font_size: sp(11)
                 text_size: self.size
                 height: dp(18)
@@ -393,15 +326,15 @@
             TextInput:
                 id: quick_event_header
                 text: app.quick_event_header
-                background_color: (.2, .2, .2, 1)
-                foreground_color: (1, 1, 1, 1)
+                background_color: app.theme.textinputbg
+                foreground_color: app.theme.textinputcolor 
                 hint_text: '## Events'
                 size_hint: 1, None
                 height: sp(32)
                 on_text:app.set_pref("quick_event_header", self.text)
             Label:
                 text: 'Quick Journal Header Format'
-                color: .7, .7, .7, 1
+                color: app.theme.label
                 font_size: sp(11)
                 text_size: self.size
                 height: dp(18)
@@ -409,15 +342,15 @@
             TextInput:
                 id: quick_journal_header
                 text: app.quick_journal_header
-                background_color: (.2, .2, .2, 1)
-                foreground_color: (1, 1, 1, 1)
+                background_color: app.theme.textinputbg
+                foreground_color: app.theme.textinputcolor 
                 hint_text: '## {%Y-%m-%d %a}'
                 size_hint: 1, None
                 height: sp(32)
                 on_text:app.set_pref("quick_journal_header", self.text)
             Label:
                 text: 'Quick Journal Item Format'
-                color: .7, .7, .7, 1
+                color: app.theme.label
                 font_size: sp(11)
                 text_size: self.size
                 height: dp(18)
@@ -425,8 +358,8 @@
             TextInput:
                 id: quick_journal_item
                 text: app.quick_journal_item
-                background_color: (.2, .2, .2, 1)
-                foreground_color: (1, 1, 1, 1)
+                background_color: app.theme.textinputbg
+                foreground_color: app.theme.textinputcolor
                 hint_text: '- {%Y-%m-%d %a} : {}'
                 size_hint: 1, None
                 height: sp(32)
@@ -436,14 +369,14 @@
                 height: dp(48)
             Label:
                 text: 'Webdav Synchronization'
-                color: .7, .7, .7, 1
+                color: app.theme.labeltitle
                 font_size: sp(16)
                 text_size: self.size
                 height: dp(18)
                 size_hint: 1, None
             Label:
                 text: 'Host'
-                color: .7, .7, .7, 1
+                color: app.theme.label
                 font_size: sp(11)
                 text_size: self.size
                 height: dp(18)
@@ -451,15 +384,15 @@
             TextInput:
                 id: webdav_host
                 text: app.webdav_host
-                background_color: (.2, .2, .2, 1)
-                foreground_color: (1, 1, 1, 1)
+                background_color: app.theme.textinputbg
+                foreground_color: app.theme.textinputcolor
                 hint_text: 'https://monnextcloud.fr/'
                 size_hint: 1, None
                 height: sp(32)
                 on_text:app.set_pref("webdav_host", self.text)
             Label:
                 text: 'Login'
-                color: .7, .7, .7, 1
+                color: app.theme.label
                 font_size: sp(11)
                 height: dp(18)
                 text_size: self.size
@@ -467,8 +400,8 @@
             TextInput:
                 id: webdav_login
                 text: app.webdav_login
-                background_color: (.2, .2, .2, 1)
-                foreground_color: (1, 1, 1, 1)
+                background_color: app.theme.textinputbg
+                foreground_color: app.theme.textinputcolor
                 height: dp(18)
                 hint_text: 'usermame'
                 size_hint: 1, None
@@ -476,7 +409,7 @@
                 on_text:app.set_pref("webdav_login", self.text)
             Label:
                 text: 'Password'
-                color: .7, .7, .7, 1
+                color: app.theme.label
                 font_size: sp(11)
                 height: dp(18)
                 text_size: self.size
@@ -484,15 +417,15 @@
             TextInput:
                 id: webdav_passwd
                 text: app.webdav_passwd
-                background_color: (.2, .2, .2, 1)
-                foreground_color: (1, 1, 1, 1)
+                background_color: app.theme.textinputbg
+                foreground_color: app.theme.textinputcolor
                 hint_text: 'xxxxxxx'
                 size_hint: 1, None
                 height: sp(32)
                 on_text:app.set_pref("webdav_passwd", self.text)
             Label:
                 text: 'Path'
-                color: .7, .7, .7, 1
+                color: app.theme.label
                 height: dp(18)
                 font_size: sp(11)
                 text_size: self.size
@@ -501,12 +434,26 @@
                 id: webdav_path
                 text: app.webdav_path
                 hint_text: '/remote.php/dav/files/user/Notes'
-                background_color: (.2, .2, .2, 1)
-                foreground_color: (1, 1, 1, 1)
+                background_color: app.theme.textinputbg
+                foreground_color: app.theme.textinputcolor
                 size_hint: 1, None
                 height: sp(32)
                 on_text:app.set_pref("webdav_path", self.text)
-     
+            SelectableButton:
+                id: sync_test
+                text: 'Validate Webdav'
+                on_release: app.validate_sync_settings()
+                size_hint: 1, None
+            Label:
+                id: sync_status
+                text: ''
+                color: app.theme.label
+                height: dp(18)
+                font_size: sp(11)
+                text_size: self.size
+                size_hint: 1, None
+                halign: 'center'
+ 
             Widget:
                 size_hint: 1, 1
 
@@ -517,12 +464,7 @@
     size_hint: None, None
     pos_hint: {'center_y': 0.5}
     size: dp(36), dp(36)
- 
-<AwesomeCircularButton@CircularButton>:
-    font_name:"awesome"
-    font_size:"16sp"
-    size_hint: None, None
-    size: dp(48), dp(48)
+    color: app.theme.toolbarcolor
 
 <SelectableAwesomeButton@ButtonBehavior+Label>:
     font_name:"awesome"
@@ -537,11 +479,11 @@
     height:dp(64)
     canvas.before:
         Color:
-            rgb: (.2, .2, .2, 1)
+            rgb: app.theme.selectablebuttoncolorbg
         Rectangle:
             pos: self.pos[0] + dp(5), self.pos[1] + dp(5) 
             size: self.size[0] - dp(10), self.size[1] - dp(10) 
-    color: (1,1,1,1) if not self.selected else (1,0,0,1)
+    color: app.theme.selectablebuttoncolor if not self.selected else app.theme.selectableselectedbuttoncolor
 
 <DatetimePickerScreen>:
     BoxLayout:
@@ -554,7 +496,7 @@
             size_hint: 1, None
 
             AwesomeButton:
-                color: 1,1, 1, 1
+                color: app.theme.actionbuttoncolor
                 size_hint: 1, None
                 font_size: "24sp"
                 text: '\uf00d'
@@ -562,89 +504,12 @@
                 on_release: root.dismiss()
 
             AwesomeButton:
-                color: 1,1, 1, 1
+                color: app.theme.actionbuttoncolor
                 size_hint: 1, None
                 font_size: "24sp"
                 text: '\uf00c'
                 height: '64dp'
                 on_release: root.dismiss();root.fn(dtp.day, dtp.month, dtp.year, dtp.hour, dtp.minute)
 
-
-<TodayScreen>:
-       
-    TodayRecycleView:
-        id: todaylistview
-        data:app.today
-    FloatLayout:
-        Label:
-            value: 10
-            canvas.before:
-                Color:
-                    rgb: (.1, .1, .2, 1 if app.syncing else 0)
-                Rectangle:
-                    pos: self.pos 
-                    size: self.size 
-            size_hint: 1, None
-            pos: 0, 0
-            height: dp(32)
-            opacity: 1 if app.syncing else 0
-            text: "Syncing"
-            id: sync_indication
-        AwesomeCircularButton:
-            id: settings_button
-            color: .9,.2, .2, 0
-            pos: self.parent.width - dp(64), self.parent.height - dp(64)
-            angle: 0
-            size_hint: None, None
-            text: '\uf085' #'\uf085'
-            height: '64dp'
-            width: '64dp'
-            font_size: "24sp"
-            on_release: app.go_settings()
-        AwesomeCircularButton:
-            color: .9,.2, .2, 1
-            pos: self.parent.width - dp(80), dp(112)# + app.keyboard_height
-            size_hint: None, None
-            text: '\uf067'
-            height: '64dp'
-            width: '64dp'
-            font_size: "24sp"
-            on_release: app.add_note()
-        AwesomeCircularButton:
-            color: .9,.2, .2, 1
-            pos: self.parent.width - dp(80), dp(16) #+ app.keyboard_height
-            size_hint: None, None
-            font_size: "24sp"
-            text: '\uf271'
-            height: '64dp'
-            width: '64dp'
-            on_release: app.add_todo()
-
-AnchorLayout:          
-    anchor_y:"top"
-    size_hint:1,1
-    BoxLayout:
-        orientation: 'vertical'
-        size_hint: 1, None
-        height: root.height - app.keyboard_height
-
-        ScreenManager:
-            id: sm
-
-            TodayScreen:
-                name:'today'
-                id: todayScreen
-
-            TodoView:
-                name:'todoView'
-                id: todoView
-
-            SettingsScreen:
-                name:'settings'
-                id: settingsView
-
-            DatetimePickerScreen:
-                name:'datetimepicker'
-                id: datetimePickerView
 
 

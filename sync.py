@@ -52,7 +52,10 @@ class WebDavSync:
             "relpath": relpath,
         }
         with open(local_pth, "r") as fh:
-            di["content"] = fh.read()
+            try:
+                di["content"] = fh.read()
+            except UnicodeDecodeError:
+                di["content"] = None
         self.journal[relpath] = di
         self._save_journal()
 
@@ -72,7 +75,10 @@ class WebDavSync:
             "relpath": relpath,
         }
         with open(local_pth, "r") as fh:
-            di["content"] = fh.read()
+            try:
+                di["content"] = fh.read()
+            except UnicodeDecodeError:
+                di["content"] = None
         self.journal[relpath] = di
         self._save_journal()
 
@@ -122,7 +128,10 @@ class WebDavSync:
                     "relpath": relpath,
                 }
                 with open(local_pth, "r") as fh:
-                    di["content"] = fh.read()
+                    try:
+                        di["content"] = fh.read()
+                    except UnicodeDecodeError:
+                        di["content"] = None
                 self.journal[relpath] = di
                 self._save_journal()
                 continue
@@ -197,8 +206,10 @@ class WebDavSync:
             print("Conflict not resolved for %s" % relpath)
             os.rename(
                 local_pth,
-                os.path.join(
-                    self.local_path, "{}_{}".format(int(time.time()), relpath)
+                "{}_{}.{}".format(
+                    os.path.splitext(local_pth)[0],
+                    int(time.time()),
+                    os.path.splitext(local_pth)[1],
                 ),
             )
             self._receive(relpath)
@@ -221,7 +232,14 @@ class WebDavSync:
         remote_dict = {}
         for remote_item in remote_list:
             if remote_item["isdir"]:
-                remote_dict.update(self._list_remote_dir(remote_list["relpath"]))
+                # ignore starting with .
+                if os.path.basename(remote_item["path"].rstrip("/")).startswith("."):
+                    continue
+                remote_dict.update(
+                    self._list_remote_dir(
+                        os.path.relpath(remote_item["path"], self.remote_path)
+                    )
+                )
             else:
                 di = {
                     "relpath": os.path.relpath(remote_item["path"], self.remote_path),
@@ -231,7 +249,7 @@ class WebDavSync:
         return remote_dict
 
     def _list_remote(self):
-        """ Build a remote list"""
+        """Build a remote list"""
         return self._list_remote_dir("")
 
     """
