@@ -12,5 +12,6 @@ jobs:
     runs-on: kivy/buildozer
 
     steps:
-    - name: Build with buildozer
-      run: buildozer android debug 
+      - uses: actions/checkout@v2
+      - name: Build with buildozer
+      - run: buildozer android debug 
