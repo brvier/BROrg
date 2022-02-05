@@ -17,9 +17,9 @@ jobs:
       - run: pip3 install --user --upgrade Cython==0.29.19 virtualenv buildozer
       - run: buildozer android debug
 
-  artifact:
-    uses: actions/upload-artifact@v2
-    with:
-      name: fr.brvier.brorg.apk
-      path: bin/*.apk
-      retention-days: 14
+      - name: artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: fr.brvier.brorg.apk
+          path: bin/*.apk
+          retention-days: 14
